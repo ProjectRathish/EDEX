@@ -8,7 +8,7 @@ const helmet   = require('helmet');
 const morgan   = require('morgan');
 
 const config                        = require('./config/config');
-const { testConnection }            = require('./config/db');
+const { pool, testConnection }       = require('./config/db');
 const apiRouter                     = require('./routes/index');
 const { errorHandler, notFound }    = require('./middleware/errorHandler');
 
@@ -26,7 +26,12 @@ app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps, curl, Postman)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin) || origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+    if (
+      allowedOrigins.includes(origin) ||
+      origin.startsWith('http://localhost:') ||
+      origin.startsWith('http://127.0.0.1:') ||
+      origin.endsWith('issschoolpmna.com')
+    ) {
       return callback(null, true);
     }
     return callback(new Error('Not allowed by CORS'));
@@ -62,6 +67,20 @@ app.use('/api', apiRouter);
 app.use(notFound);
 app.use(errorHandler);
 
+// ─── Scheduled Maintenance: Purge Expired GPS Pings (> 14 days) ─────────────
+const purgeExpiredGpsPings = async () => {
+  try {
+    const [result] = await pool.execute(
+      'DELETE FROM bus_gps_pings WHERE received_at < NOW() - INTERVAL 14 DAY'
+    );
+    if (result && result.affectedRows > 0) {
+      console.log(`🧹 [Maintenance] Purged ${result.affectedRows} expired GPS pings (>14 days old)`);
+    }
+  } catch (err) {
+    console.error('⚠️ [Maintenance] GPS ping purge warning:', err.message);
+  }
+};
+
 // ─── Start Server ─────────────────────────────────────────────────────────────
 const start = async () => {
   await testConnection();   // Exits process if DB unreachable
@@ -70,6 +89,10 @@ const start = async () => {
     console.log(`    ENV  : ${config.env}`);
     console.log(`    PORT : ${config.port}`);
     console.log(`    URL  : http://localhost:${config.port}/api/${config.apiVersion}`);
+
+    // Schedule GPS ping table cleanup: run 15s after startup, then every 24 hours
+    setTimeout(purgeExpiredGpsPings, 15000);
+    setInterval(purgeExpiredGpsPings, 24 * 60 * 60 * 1000);
   });
 };
 

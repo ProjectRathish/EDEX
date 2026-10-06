@@ -626,7 +626,8 @@ class TripProvider extends ChangeNotifier {
       }
     });
 
-    _livePollingTimer = Timer.periodic(const Duration(milliseconds: 2500), (_) {
+    // Poll every 4 seconds (smooth real-time tracking with 40% less server load)
+    _livePollingTimer = Timer.periodic(const Duration(milliseconds: 4000), (_) {
       _fetchLiveTelemetry(apiService: apiService, routeId: routeId, token: token);
     });
   }

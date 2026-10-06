@@ -1378,6 +1378,11 @@ const deleteRoutePath = async (req, res, next) => {
 // GPS TRACKING (Driver mobile app → Server → Parent mobile app)
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ── In-Memory Live Telemetry Cache ──────────────────────────────────────────
+// Maps bus_id -> { ping_id, bus_id, route_id, trip_id, latitude, longitude, speed_kmh, heading_degrees, accuracy_meters, is_trip_active, recorded_at, received_at }
+// Eliminates repetitive MySQL queries during high-frequency parent and fleet tracking polling.
+const liveBusTelemetryCache = new Map();
+
 /**
  * POST /bus/tracking/ping
  * Called by the driver mobile app every ~10 seconds.
@@ -1407,21 +1412,42 @@ const recordGpsPing = async (req, res, next) => {
     if (!vehicle) return sendNotFound(res, 'Vehicle not found');
 
     const id = generateUUID();
+    const recordedAtDate = recorded_at ? new Date(recorded_at) : new Date();
+    const receivedAtDate = new Date();
+
     await pool.execute(
       `INSERT INTO bus_gps_pings
          (ping_id, bus_id, route_id, trip_id, latitude, longitude,
           speed_kmh, heading_degrees, accuracy_meters, altitude_m,
-          is_trip_active, recorded_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+          is_trip_active, recorded_at, received_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         id, bus_id, route_id || null, trip_id || null,
         latitude, longitude,
         speed_kmh ?? null, heading_degrees ?? null,
         accuracy_meters ?? null, altitude_m ?? null,
         is_trip_active ? 1 : 0,
-        recorded_at ? new Date(recorded_at) : new Date(),
+        recordedAtDate,
+        receivedAtDate,
       ],
     );
+
+    // Update in-memory telemetry cache instantly for sub-millisecond parent polling
+    liveBusTelemetryCache.set(bus_id, {
+      ping_id: id,
+      bus_id,
+      route_id: route_id || null,
+      trip_id: trip_id || null,
+      latitude,
+      longitude,
+      speed_kmh: speed_kmh ?? null,
+      heading_degrees: heading_degrees ?? null,
+      accuracy_meters: accuracy_meters ?? null,
+      altitude_m: altitude_m ?? null,
+      is_trip_active: is_trip_active ? 1 : 0,
+      recorded_at: recordedAtDate,
+      received_at: receivedAtDate,
+    });
 
     return sendSuccess(res, { ping_id: id }, 'GPS ping recorded');
   } catch (err) { next(err); }
@@ -1454,16 +1480,25 @@ const getLivePosition = async (req, res, next) => {
     if (!route) return sendNotFound(res, 'Route not found');
     if (!route.assigned_bus_id) return sendSuccess(res, { route, live: null }, 'No vehicle assigned to this route');
 
-    // Get latest GPS ping for this vehicle
-    const [[latestPing]] = await pool.execute(
-      `SELECT ping_id, trip_id, latitude, longitude, speed_kmh, heading_degrees,
-              accuracy_meters, is_trip_active, recorded_at, received_at
-       FROM bus_gps_pings
-       WHERE bus_id = ?
-       ORDER BY received_at DESC
-       LIMIT 1`,
-      [route.assigned_bus_id],
-    );
+    // 1. Check in-memory telemetry cache first (zero database overhead)
+    let latestPing = liveBusTelemetryCache.get(route.assigned_bus_id) || null;
+
+    // 2. Fallback to MySQL if cache is cold (e.g., right after server restart)
+    if (!latestPing) {
+      const [[dbPing]] = await pool.execute(
+        `SELECT ping_id, trip_id, latitude, longitude, speed_kmh, heading_degrees,
+                accuracy_meters, is_trip_active, recorded_at, received_at
+         FROM bus_gps_pings
+         WHERE bus_id = ?
+         ORDER BY received_at DESC
+         LIMIT 1`,
+        [route.assigned_bus_id],
+      );
+      if (dbPing) {
+        latestPing = dbPing;
+        liveBusTelemetryCache.set(route.assigned_bus_id, dbPing);
+      }
+    }
 
     // Calculate staleness — if ping is recent or trip is actively marked live
     let isOnline = false;
@@ -1603,6 +1638,34 @@ const getFleetLivePositions = async (req, res, next) => {
         age_seconds: ageSeconds,
         is_online: p.is_trip_active == 1 && ageSeconds < 300,
       };
+    }
+
+    // Merge in-memory telemetry cache if fresher or missing from DB
+    for (const [bId, cPing] of liveBusTelemetryCache.entries()) {
+      const pingTime = new Date(cPing.received_at || cPing.recorded_at).getTime();
+      const existing = pingMap[bId];
+      const existingTime = existing ? new Date(existing.received_at || existing.recorded_at).getTime() : 0;
+
+      if (!existing || pingTime > existingTime) {
+        const rawAge = Math.round((Date.now() - pingTime) / 1000);
+        const ageSeconds = Math.max(0, isNaN(rawAge) ? 9999 : rawAge);
+
+        let shift = 'morning';
+        if (cPing.trip_id && String(cPing.trip_id).toLowerCase().includes('evening')) {
+          shift = 'evening';
+        } else if (cPing.trip_id && String(cPing.trip_id).toLowerCase().includes('morning')) {
+          shift = 'morning';
+        } else {
+          shift = new Date().getHours() >= 12 ? 'evening' : 'morning';
+        }
+
+        pingMap[bId] = {
+          ...cPing,
+          shift,
+          age_seconds: ageSeconds,
+          is_online: cPing.is_trip_active == 1 && ageSeconds < 300,
+        };
+      }
     }
 
     const fleet = vehicles.map(v => {

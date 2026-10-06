@@ -484,7 +484,7 @@ export default function LiveBusMapView({ school, academicYear, onNavigate, theme
   const [fitAllBounds, setFitAllBounds] = useState(null);
   const [showStops, setShowStops] = useState(true);
   const [showPolyline, setShowPolyline] = useState(true);
-  const [autoRefreshInterval, setAutoRefreshInterval] = useState(2.5); // Rapid 2.5s stream sync
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState(4); // Balanced 4s stream sync
 
   // ── Fetch Real-time Fleet Telemetry (Broadcast by Drivers) ───────────────────
   const fetchFleetData = useCallback(async (isSilent = false) => {
