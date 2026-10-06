@@ -1,5 +1,4 @@
--- =============================================================================
--- SAARTHI · saarthi_db
+-- EDEX · Initial Users & Demo School Seed
 -- Seed     : 002_core_initial_users_seed.sql
 -- Purpose  : Seeds initial platform super_admin user and default demo school
 --            (Delhi Public School) with school_admin user (principal_dps).
@@ -12,7 +11,7 @@
 INSERT IGNORE INTO `core_users`
   (`user_id`, `school_id`, `username`, `email`, `phone`, `password_hash`, `is_active`)
 VALUES
-  ('00000000-0000-0000-0000-000000000001', NULL, 'superadmin', 'superadmin@saarthi.platform', '+919999900000', '$2a$10$wK8rXmFwL7Zp1B0O8iO3u.vA8T3E8Q0y7B8P6H8K5m2x7e1V0W4d2', TRUE);
+  ('00000000-0000-0000-0000-000000000001', NULL, 'superadmin', 'superadmin@edex.platform', '+919999900000', '$2a$10$wK8rXmFwL7Zp1B0O8iO3u.vA8T3E8Q0y7B8P6H8K5m2x7e1V0W4d2', TRUE);
 
 -- Map super_admin role to superadmin user
 INSERT IGNORE INTO `core_user_roles`

@@ -193,6 +193,12 @@ const updateSection = async (req, res, next) => {
       [name, max_strength ? parseInt(max_strength) : null, sectionId, school_id]
     );
 
+    return sendSuccess(res, { section_id: sectionId }, 'Section updated successfully');
+  } catch (err) {
+    next(err);
+  }
+};
+
 // ─── Delete Class ─────────────────────────────────────────────────────────────
 const deleteClass = async (req, res, next) => {
   try {

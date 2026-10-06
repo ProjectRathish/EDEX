@@ -7,13 +7,13 @@ const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
 
 async function setupDatabase() {
-  console.log('🚀  Starting SAARTHI Database Setup...');
+  console.log('🚀  Starting EDEX Database Setup...');
 
   const dbHost = process.env.DB_HOST || '127.0.0.1';
   const dbPort = parseInt(process.env.DB_PORT) || 3306;
   const dbUser = process.env.DB_USER || 'root';
   const dbPassword = process.env.DB_PASSWORD || '';
-  const dbName = process.env.DB_NAME || 'saarthi_db';
+  const dbName = process.env.DB_NAME || 'edex_db';
 
   let connection;
   try {
@@ -71,7 +71,7 @@ async function setupDatabase() {
     // Upsert superadmin
     await connection.query(`
       INSERT INTO core_users (user_id, school_id, username, email, phone, password_hash, is_active)
-      VALUES ('00000000-0000-0000-0000-000000000001', NULL, 'superadmin', 'superadmin@saarthi.platform', '+919999900000', ?, TRUE)
+      VALUES ('00000000-0000-0000-0000-000000000001', NULL, 'superadmin', 'superadmin@edex.platform', '+919999900000', ?, TRUE)
       ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash), is_active = TRUE;
     `, [superAdminPasswordHash]);
 

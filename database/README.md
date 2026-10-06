@@ -1,9 +1,9 @@
-# SAARTHI — Database
+# EDEX — Database
 
 ## Database Name
 
 ```
-saarthi_db
+edex_db
 ```
 
 ---
@@ -32,11 +32,11 @@ saarthi_db
 Before running migrations:
 
 ```sql
-CREATE DATABASE IF NOT EXISTS `saarthi_db`
+CREATE DATABASE IF NOT EXISTS `edex_db`
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 
-USE saarthi_db;
+USE edex_db;
 ```
 
 ---
@@ -57,7 +57,7 @@ All tables use a module prefix:
 
 | Prefix | Module | Examples |
 |---|---|---|
-| `core_` | SAARTHI Core | `core_students`, `core_users` |
+| `core_` | EDEX Core | `core_students`, `core_users` |
 | `idcard_` | ID Card module | `idcard_cards`, `idcard_templates` |
 | `voting_` | Voting module | `voting_elections`, `voting_votes` |
 | `bus_` | Bus module | `bus_routes`, `bus_assignments` |

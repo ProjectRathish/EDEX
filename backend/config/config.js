@@ -15,7 +15,7 @@ const config = {
     port           : parseInt(process.env.DB_PORT)  || 3306,
     user           : process.env.DB_USER            || 'root',
     password       : process.env.DB_PASSWORD        || '',
-    name           : process.env.DB_NAME            || 'saarthi_db',
+    name           : process.env.DB_NAME            || 'edex_db',
     connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT) || 10,
   },
 
@@ -27,7 +27,7 @@ const config = {
   },
 
   storage: {
-    path: process.env.STORAGE_PATH || 'D:/SAARTHI/storage',
+    path: process.env.STORAGE_PATH || 'D:/EDEX/storage',
   },
 
   cors: {

@@ -24,7 +24,10 @@ import {
   User,
   ShieldCheck,
   ArrowRight,
-  ExternalLink
+  ExternalLink,
+  Route,
+  MapPin,
+  Radio
 } from 'lucide-react';
 
 export default function Sidebar({
@@ -41,44 +44,26 @@ export default function Sidebar({
 
   // Navigation for Super Admin Mode
   const superAdminNavItems = [
-    {
-      id: 'schools',
-      label: 'Schools & Tenants',
-      icon: Building2,
-      badge: 'Platform',
-      badgeClass: 'badge-primary'
-    },
-    {
-      id: 'enquiries',
-      label: 'Onboarding Enquiries',
-      icon: Mail,
-      badge: 'Pipeline',
-      badgeClass: 'badge-amber'
-    },
-    {
-      id: 'profile',
-      label: 'Security & Root Profile',
-      icon: ShieldCheck,
-      badge: 'Root',
-      badgeClass: 'badge-emerald'
-    },
+    { id: 'schools', label: 'Schools & Tenants', icon: Building2 },
+    { id: 'enquiries', label: 'Onboarding Enquiries', icon: Mail },
+    { id: 'profile', label: 'Security & Root Profile', icon: ShieldCheck },
   ];
 
-  // Navigation for SAARTHI Core Foundation (School Admin view)
+  // Navigation for EDEX Core Foundation (School Admin view)
   const coreNavItems = [
-    ...(isSuperAdmin ? [{ id: 'super-admin', label: 'Super Admin Portal', icon: ShieldAlert, badge: 'SYSTEM' }] : []),
+    ...(isSuperAdmin ? [{ id: 'super-admin', label: 'Super Admin Portal', icon: ShieldAlert }] : []),
     { id: 'dashboard', label: 'School Dashboard', icon: LayoutDashboard },
-    { id: 'students', label: 'Student Master', icon: GraduationCap, badge: 'Core' },
+    { id: 'students', label: 'Student Master', icon: GraduationCap },
     { id: 'classes', label: 'Classes & Sections', icon: BookOpen },
     { id: 'staff', label: 'Staff Directory', icon: Users2 },
     { id: 'guardians', label: 'Guardians & Parents', icon: UserCheck },
-    { id: 'rbac', label: 'Roles & RBAC', icon: ShieldAlert },
+    { id: 'iam', label: 'Identity & Access (IAM)', icon: ShieldCheck },
   ];
 
   // Contextual Navigation when in ID Card Module
   const idCardNavItems = [
     { id: 'id-card', label: 'ID Card Studio', icon: CreditCard },
-    { id: 'id-card-templates', label: 'Template Designer', icon: Sliders, badge: 'Studio' },
+    { id: 'id-card-templates', label: 'Template Designer', icon: Sliders },
     { id: 'id-card-batch', label: 'Bulk Batch Print', icon: Printer },
     { id: 'id-card-logs', label: 'Issuance History', icon: History },
   ];
@@ -87,14 +72,15 @@ export default function Sidebar({
   const votingNavItems = [
     { id: 'voting', label: 'Live Ballot & Posts', icon: Vote },
     { id: 'voting-candidates', label: 'Candidates Roster', icon: Users2 },
-    { id: 'voting-results', label: 'Live Tally & Results', icon: BarChart3, badge: 'Live' },
+    { id: 'voting-results', label: 'Live Tally & Results', icon: BarChart3 },
     { id: 'voting-roll', label: 'Electoral Roll', icon: FileCheck },
   ];
 
   // Contextual Navigation when in Bus Module
   const busNavItems = [
-    { id: 'bus', label: 'Routes & Fleet', icon: Bus },
-    { id: 'bus-stops', label: 'Stops & Geofencing', icon: QrCode },
+    { id: 'bus-live-map', label: 'Live Fleet Tracking', icon: Radio, isLive: true },
+    { id: 'bus-routes', label: 'Route Management', icon: Route },
+    { id: 'bus-management', label: 'Bus Management', icon: Bus },
     { id: 'bus-passengers', label: 'Student Rosters', icon: GraduationCap },
   ];
 
@@ -111,24 +97,26 @@ export default function Sidebar({
   let isModuleView = false;
   let moduleName = 'Core';
 
+  const tabStr = typeof currentTab === 'string' ? currentTab : '';
+
   if (isSuperAdminView) {
     sectionTitle = 'Super Admin Control';
-  } else if (currentTab.startsWith('id-card')) {
+  } else if (tabStr.startsWith('id-card')) {
     navItems = idCardNavItems;
     sectionTitle = 'ID Card Suite';
     isModuleView = true;
     moduleName = 'ID Card Module';
-  } else if (currentTab.startsWith('voting')) {
+  } else if (tabStr.startsWith('voting')) {
     navItems = votingNavItems;
     sectionTitle = 'School Election Suite';
     isModuleView = true;
     moduleName = 'Voting Module';
-  } else if (currentTab.startsWith('bus')) {
+  } else if (tabStr.startsWith('bus')) {
     navItems = busNavItems;
     sectionTitle = 'Bus Transportation';
     isModuleView = true;
     moduleName = 'Bus Module';
-  } else if (currentTab.startsWith('canteen')) {
+  } else if (tabStr.startsWith('canteen')) {
     navItems = canteenNavItems;
     sectionTitle = 'Canteen & Wallet';
     isModuleView = true;
@@ -274,11 +262,6 @@ export default function Sidebar({
                       <Icon size={18} color={isActive ? '#818cf8' : '#94a3b8'} />
                       <span>{item.label}</span>
                     </div>
-                    {item.badge && (
-                      <span className={`badge ${item.badgeClass}`} style={{ fontSize: '9px' }}>
-                        {item.badge}
-                      </span>
-                    )}
                   </button>
                 );
               })
@@ -286,7 +269,7 @@ export default function Sidebar({
               // ── School Workspace Navigation items ───────────────────────────────
               navItems.map((item) => {
                 const Icon = item.icon;
-                const isActive = currentTab === item.id;
+                const isActive = currentTab === item.id || (item.id === 'iam' && currentTab === 'rbac');
                 return (
                   <button
                     key={item.id}
@@ -328,9 +311,13 @@ export default function Sidebar({
                       <Icon size={18} color={isActive ? '#818cf8' : '#94a3b8'} />
                       <span>{item.label}</span>
                     </div>
-                    {item.badge && (
-                      <span className="badge badge-primary" style={{ fontSize: '9px' }}>
-                        {item.badge}
+                    {item.isLive && (
+                      <span style={{
+                        fontSize: '9px', fontWeight: 800, padding: '2px 6px', borderRadius: '10px',
+                        background: 'rgba(16, 185, 129, 0.2)', color: '#10b981',
+                        border: '1px solid rgba(16, 185, 129, 0.4)', letterSpacing: '0.04em'
+                      }}>
+                        LIVE
                       </span>
                     )}
                   </button>

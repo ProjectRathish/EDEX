@@ -1,7 +1,6 @@
--- =============================================================================
--- SAARTHI · saarthi_db
+-- EDEX · Database System Seed
 -- Seed     : 001_core_system_seed.sql
--- Purpose  : Seeds all platform system data that must exist before SAARTHI
+-- Purpose  : Seeds all platform system data that must exist before EDEX
 --            can be used. Contains three sections:
 --              SECTION 1 — System Roles (6 roles)
 --              SECTION 2 — Permissions  (62 permissions across 5 modules)
@@ -27,7 +26,7 @@ INSERT IGNORE INTO `core_roles`
   (`role_id`, `school_id`, `name`, `description`, `is_system_role`)
 VALUES
   (UUID(), NULL, 'super_admin',
-   'SAARTHI platform administrator. Full access to all schools, modules, and platform settings.',
+   'EDEX platform administrator. Full access to all schools, modules, and platform settings.',
    TRUE),
 
   (UUID(), NULL, 'school_admin',

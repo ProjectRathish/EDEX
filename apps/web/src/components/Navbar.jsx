@@ -49,7 +49,7 @@ export default function Navbar({
     {
       id: 'dashboard',
       tabTarget: 'dashboard',
-      name: 'SAARTHI Core',
+      name: 'EDEX Core',
       desc: 'Master Students, Classes, Staff & RBAC',
       icon: GraduationCap,
       color: '#6366f1',
@@ -88,7 +88,7 @@ export default function Navbar({
       color: '#fbbf24',
       badge: modulesStatus?.bus?.is_enabled ?? false ? 'Active' : 'Add-on',
       badgeClass: modulesStatus?.bus?.is_enabled ?? false ? 'badge-emerald' : 'badge-amber',
-      isActive: currentTab === 'bus',
+      isActive: currentTab === 'bus' || (typeof currentTab === 'string' && currentTab.startsWith('bus')),
     },
     {
       id: 'canteen',
@@ -147,7 +147,7 @@ export default function Navbar({
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.03em', fontFamily: 'Outfit', color: 'var(--text-primary)' }}>
-                SAARTHI
+                EDEX
               </span>
               <span className="badge badge-primary" style={{ fontSize: '10px', padding: '1px 6px' }}>
                 SUPER APP
@@ -470,7 +470,7 @@ export default function Navbar({
           <button 
             className="btn btn-secondary btn-sm" 
             onClick={onLogout}
-            title="Sign out of SAARTHI"
+            title="Sign out of EDEX"
             style={{ padding: '8px 12px' }}
           >
             <LogOut size={15} />

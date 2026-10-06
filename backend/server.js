@@ -48,7 +48,7 @@ if (config.env !== 'test') {
 // ─── Root ─────────────────────────────────────────────────────────────────────
 app.get('/', (req, res) => {
   res.json({
-    name   : 'SAARTHI API',
+    name   : 'EDEX API',
     version: config.apiVersion,
     status : 'running',
   });
@@ -56,6 +56,7 @@ app.get('/', (req, res) => {
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
 app.use(`/api/${config.apiVersion}`, apiRouter);
+app.use('/api', apiRouter);
 
 // ─── 404 & Error Handlers ─────────────────────────────────────────────────────
 app.use(notFound);
@@ -65,7 +66,7 @@ app.use(errorHandler);
 const start = async () => {
   await testConnection();   // Exits process if DB unreachable
   app.listen(config.port, () => {
-    console.log(`🚀  SAARTHI API started`);
+    console.log(`🚀  EDEX API started`);
     console.log(`    ENV  : ${config.env}`);
     console.log(`    PORT : ${config.port}`);
     console.log(`    URL  : http://localhost:${config.port}/api/${config.apiVersion}`);

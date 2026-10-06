@@ -58,7 +58,7 @@ export default function RBACView() {
           </span>
         </div>
         <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-          Platform-wide permission definitions using dot-notation (module.resource.action) across all SAARTHI services.
+          Platform-wide permission definitions using dot-notation (module.resource.action) across all EDEX services.
         </p>
       </div>
 

@@ -28,7 +28,7 @@ function ModuleWorkspaceView({ moduleId, students = [], staff = [], classes = []
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <h1 style={{ fontSize: '24px', fontWeight: 800 }}>ID Card Studio & Card Generator</h1>
-              <span className="badge badge-primary">Consuming SAARTHI Core</span>
+              <span className="badge badge-primary">Consuming EDEX Core</span>
             </div>
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
               Live rendering student card data directly from <code style={{ color: 'var(--primary)' }}>core_students</code> and <code style={{ color: 'var(--primary)' }}>core_student_academic_assignments</code>.
@@ -174,11 +174,11 @@ function ModuleWorkspaceView({ moduleId, students = [], staff = [], classes = []
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <QrCode size={30} color="#ffffff" />
                   <span style={{ fontSize: '10px', color: '#94a3b8', lineHeight: 1.2 }}>
-                    SAARTHI SECURE<br />DIGITAL VERIFIED
+                    EDEX SECURE<br />DIGITAL VERIFIED
                   </span>
                 </div>
                 <div style={{ fontSize: '9px', color: '#a5b4fc', textAlign: 'right' }}>
-                  SAARTHI SUPER APP<br />CORE MASTER RECORD
+                  EDEX SUPER APP<br />CORE MASTER RECORD
                 </div>
               </div>
             </div>
@@ -195,7 +195,7 @@ function ModuleWorkspaceView({ moduleId, students = [], staff = [], classes = []
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <h1 style={{ fontSize: '24px', fontWeight: 800 }}>School Election & Digital Ballot</h1>
-              <span className="badge badge-primary">Consuming SAARTHI Core</span>
+              <span className="badge badge-primary">Consuming EDEX Core</span>
             </div>
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
               Electoral roll dynamically constructed from active students in <code style={{ color: 'var(--primary)' }}>Class 9–12</code> for Year {academicYear?.name}.
@@ -275,7 +275,7 @@ function ModuleWorkspaceView({ moduleId, students = [], staff = [], classes = []
       <Sparkles size={36} color="var(--primary)" style={{ marginBottom: '12px' }} />
       <h2 style={{ fontSize: '22px', fontWeight: 800 }}>Module: {moduleId?.toUpperCase()}</h2>
       <p style={{ fontSize: '14px', color: 'var(--text-secondary)', maxWidth: '500px', margin: '8px auto 0' }}>
-        This module is connected to SAARTHI Core and ready to consume student and guardian master records.
+        This module is connected to EDEX Core and ready to consume student and guardian master records.
       </p>
     </div>
   );

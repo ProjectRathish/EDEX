@@ -862,7 +862,7 @@ export default function SuperAdminView({
                   className="input-field"
                   value={profileForm.email}
                   onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
-                  placeholder="admin@saarthi.platform"
+                  placeholder="admin@edex.platform"
                 />
               </div>
 

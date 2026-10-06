@@ -58,6 +58,12 @@ const sendForbidden = (res, message = 'Forbidden') =>
 const sendNotFound = (res, message = 'Resource not found') =>
   sendError(res, message, 404);
 
+/**
+ * Send a 409 Conflict.
+ */
+const sendConflict = (res, message = 'Conflict: Resource already exists') =>
+  sendError(res, message, 409);
+
 module.exports = {
   sendSuccess,
   sendCreated,
@@ -66,4 +72,5 @@ module.exports = {
   sendUnauthorized,
   sendForbidden,
   sendNotFound,
+  sendConflict,
 };

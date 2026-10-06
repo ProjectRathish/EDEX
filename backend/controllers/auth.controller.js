@@ -116,22 +116,135 @@ const login = async (req, res, next) => {
       [user.user_id]
     );
 
+    const userProfile = await buildUserProfile(user, roles, permissions);
+
     return sendSuccess(res, {
       token,
-      user: {
-        user_id  : user.user_id,
-        school_id: user.school_id,
-        username : user.username,
-        email    : user.email,
-        phone    : user.phone,
-        roles,
-      },
+      user: userProfile,
     }, 'Login successful');
 
   } catch (err) {
     next(err);
   }
 };
+
+// ─── Helper: Build Complete User Profile & Module Access ───────────────────────
+async function buildUserProfile(user, roles = [], permissions = []) {
+  const isSuperAdmin = roles.includes('super_admin');
+  
+  // Calculate accessible modules
+  let accessible_modules = [];
+  if (isSuperAdmin) {
+    accessible_modules = ['super_admin', 'core', 'id_card', 'voting', 'bus', 'canteen', 'attendance', 'fees'];
+  } else {
+    const fromPerms = [...new Set(permissions.map(p => p.split('.')[0]))];
+    const set = new Set(fromPerms);
+    if (roles.includes('bus_driver')) set.add('bus');
+    if (roles.includes('canteen_operator')) set.add('canteen');
+    if (roles.includes('parent')) {
+      set.add('bus');
+      set.add('canteen');
+      set.add('attendance');
+    }
+    accessible_modules = Array.from(set);
+  }
+
+  // Fetch school details if applicable
+  let school = null;
+  if (user.school_id) {
+    const [schools] = await pool.execute(
+      'SELECT school_id, code, name, city, state, logo_url FROM core_schools WHERE school_id = ? LIMIT 1',
+      [user.school_id]
+    );
+    if (schools.length > 0) school = schools[0];
+  }
+
+  // Fetch linked staff profile if any
+  let staff_profile = null;
+  let driver_info = null;
+  const [staffRows] = await pool.execute(
+    `SELECT st.staff_id, st.employee_id, st.first_name, st.last_name, st.designation, st.phone, st.email
+     FROM core_user_staff_links usl
+     JOIN core_staff st ON usl.staff_id = st.staff_id
+     WHERE usl.user_id = ? LIMIT 1`,
+    [user.user_id]
+  );
+  if (staffRows.length > 0) {
+    staff_profile = staffRows[0];
+    const isDriverRole = roles.includes('bus_driver');
+    const isDriverDesig = staff_profile.designation && staff_profile.designation.toLowerCase().includes('driver');
+    if (isDriverRole || isDriverDesig) {
+      const [routeRows] = await pool.execute(
+        `SELECT bsa.bus_id, bsa.role,
+                v.vehicle_number, v.vehicle_name, v.capacity,
+                r.route_id, r.route_name, r.route_code, r.start_point, r.end_point
+         FROM bus_staff_assignments bsa
+         JOIN bus_vehicles v ON bsa.bus_id = v.bus_id
+         LEFT JOIN bus_routes r ON r.assigned_bus_id = v.bus_id AND r.deleted_at IS NULL
+         WHERE bsa.staff_id = ? AND bsa.is_active = 1
+         LIMIT 1`,
+        [staff_profile.staff_id]
+      );
+      if (routeRows.length > 0) {
+        driver_info = routeRows[0];
+      }
+    }
+  }
+
+  // Fetch linked guardian profile if any
+  let guardian_profile = null;
+  let children = [];
+  const [guardianRows] = await pool.execute(
+    `SELECT g.guardian_id, g.first_name, g.last_name, g.relationship_type, g.phone, g.email
+     FROM core_user_guardian_links ugl
+     JOIN core_guardians g ON ugl.guardian_id = g.guardian_id
+     WHERE ugl.user_id = ? LIMIT 1`,
+    [user.user_id]
+  );
+  if (guardianRows.length > 0) {
+    guardian_profile = guardianRows[0];
+    const [childRows] = await pool.execute(
+      `SELECT s.student_id, s.admission_number, s.first_name, s.last_name, s.photo_url,
+              sg.is_primary_contact, sg.can_pickup,
+              c.name as class_name, sec.name as section_name,
+              bsa.assignment_id as bus_assignment_id,
+              bsa.direction as bus_direction,
+              bsa.route_id, r.route_name, r.route_code,
+              r.assigned_bus_id as bus_id,
+              v.vehicle_number, v.vehicle_name,
+              bsa.stop_id, st.stop_name, st.latitude as stop_lat, st.longitude as stop_lng,
+              st.morning_time, st.evening_time
+       FROM core_student_guardians sg
+       JOIN core_students s ON sg.student_id = s.student_id
+       LEFT JOIN core_student_academic_assignments sa ON s.student_id = sa.student_id AND sa.status = 'active'
+       LEFT JOIN core_classes c ON sa.class_id = c.class_id
+       LEFT JOIN core_sections sec ON sa.section_id = sec.section_id
+       LEFT JOIN bus_student_assignments bsa ON s.student_id = bsa.student_id AND bsa.status = 'active'
+       LEFT JOIN bus_routes r ON bsa.route_id = r.route_id
+       LEFT JOIN bus_vehicles v ON r.assigned_bus_id = v.bus_id
+       LEFT JOIN bus_stops st ON bsa.stop_id = st.stop_id
+       WHERE sg.guardian_id = ? AND s.deleted_at IS NULL`,
+      [guardian_profile.guardian_id]
+    );
+    children = childRows;
+  }
+
+  return {
+    user_id: user.user_id,
+    school_id: user.school_id,
+    school,
+    username: user.username,
+    email: user.email,
+    phone: user.phone,
+    roles,
+    permissions,
+    accessible_modules,
+    staff_profile,
+    driver_info,
+    guardian_profile,
+    children,
+  };
+}
 
 // ─── Logout ───────────────────────────────────────────────────────────────────
 const logout = (req, res) => {
@@ -148,11 +261,9 @@ const me = async (req, res, next) => {
       [user_id]
     );
     if (rows.length === 0) return sendUnauthorized(res, 'User not found');
-    return sendSuccess(res, {
-      ...rows[0],
-      roles      : req.user.roles,
-      permissions: req.user.permissions,
-    });
+    
+    const userProfile = await buildUserProfile(rows[0], req.user.roles, req.user.permissions);
+    return sendSuccess(res, userProfile);
   } catch (err) {
     next(err);
   }

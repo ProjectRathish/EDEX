@@ -80,7 +80,7 @@ const createPublic = async (req, res, next) => {
       [trimmedName]
     );
     if (existingSchool.length > 0) {
-      return sendBadRequest(res, `A school with the name "${trimmedName}" is already registered on SAARTHI.`);
+      return sendBadRequest(res, `A school with the name "${trimmedName}" is already registered on EDEX.`);
     }
 
     // Check if a pending enquiry already exists for this school name or email

@@ -20,11 +20,18 @@ import {
   Clock
 } from 'lucide-react';
 
-export default function DashboardView({ students, staff, classes, academicYear, school, setTab }) {
+export default function DashboardView({ 
+  students = [], 
+  staff = [], 
+  classes = [], 
+  academicYear = null, 
+  school = null, 
+  setTab 
+}) {
   const statCards = [
     {
       title: 'Master Students',
-      value: students.length || 0,
+      value: (students?.length) || 0,
       change: '1 Record Source',
       icon: GraduationCap,
       color: '#6366f1',
@@ -32,7 +39,7 @@ export default function DashboardView({ students, staff, classes, academicYear, 
     },
     {
       title: 'Active Faculty & Staff',
-      value: staff.length || 0,
+      value: (staff?.length) || 0,
       change: 'Assigned across classes',
       icon: Users2,
       color: '#06b6d4',
@@ -40,7 +47,7 @@ export default function DashboardView({ students, staff, classes, academicYear, 
     },
     {
       title: 'Configured Classes',
-      value: classes.length || 0,
+      value: (classes?.length) || 0,
       change: 'Persistent Levels',
       icon: BookOpen,
       color: '#8b5cf6',
@@ -113,7 +120,7 @@ export default function DashboardView({ students, staff, classes, academicYear, 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
             <span className="badge badge-primary">
               <Sparkles size={12} />
-              SAARTHI CORE PLATFORM
+              EDEX CORE PLATFORM
             </span>
             <span className="badge badge-emerald">
               <CheckCircle2 size={12} />
@@ -121,7 +128,7 @@ export default function DashboardView({ students, staff, classes, academicYear, 
             </span>
           </div>
           <h1 style={{ fontSize: '28px', fontWeight: 800 }}>
-            Welcome to {school?.name || 'SAARTHI Super App'}
+            Welcome to {school?.name || 'EDEX Super App'}
           </h1>
           <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px', maxWidth: '640px' }}>
             The central foundation for school identity, academic placements, and integrated multi-module operations. One master student record powering every service.
@@ -201,7 +208,7 @@ export default function DashboardView({ students, staff, classes, academicYear, 
           <div>
             <h2 style={{ fontSize: '20px', fontWeight: 700 }}>Super App Modules</h2>
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-              Connected application modules consuming SAARTHI Core data
+              Connected application modules consuming EDEX Core data
             </p>
           </div>
           <span className="badge badge-primary" style={{ padding: '6px 12px' }}>

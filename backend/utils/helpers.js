@@ -18,11 +18,15 @@ const isValidUUID = (str) => {
 
 /**
  * Parse pagination parameters from query string.
+ * Supports all=true to return full roster.
  * Returns { page, limit, offset }
  */
-const parsePagination = (query) => {
-  const page  = Math.max(1, parseInt(query.page)  || 1);
-  const limit = Math.min(100, Math.max(1, parseInt(query.limit) || 20));
+const parsePagination = (query = {}) => {
+  const isAll = query.all === 'true' || query.all === '1' || query.limit === 'all';
+  const page  = Math.max(1, parseInt(query.page) || 1);
+  const defaultLimit = isAll ? 50000 : 20;
+  const maxLimit = isAll ? 50000 : 1000;
+  const limit = Math.min(maxLimit, Math.max(1, parseInt(query.limit) || defaultLimit));
   const offset = (page - 1) * limit;
   return { page, limit, offset };
 };
@@ -34,7 +38,7 @@ const paginationMeta = (total, page, limit) => ({
   total,
   page,
   limit,
-  totalPages: Math.ceil(total / limit),
+  totalPages: Math.max(1, Math.ceil(total / limit)),
   hasNext    : page * limit < total,
   hasPrev    : page > 1,
 });

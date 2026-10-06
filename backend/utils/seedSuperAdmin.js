@@ -8,7 +8,7 @@ async function seedAdmin() {
   try {
     const username = 'superadmin';
     const password = 'AdminPassword123!';
-    const email = 'admin@saarthi.internal';
+    const email = 'admin@edex.internal';
 
     const [existing] = await pool.execute(
       'SELECT user_id FROM core_users WHERE username = ? LIMIT 1',

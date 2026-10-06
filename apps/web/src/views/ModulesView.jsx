@@ -46,7 +46,7 @@ export default function ModulesView({ modulesStatus, school, user, refreshData }
       id: 'id_card',
       title: 'ID Card Management Suite',
       subtitle: 'Dynamic Template Studio & Smart Issuance',
-      desc: 'Seamlessly reads student name, DOB, blood group, and class placement directly from SAARTHI Core to print or download tamper-proof ID cards with QR codes.',
+      desc: 'Seamlessly reads student name, DOB, blood group, and class placement directly from EDEX Core to print or download tamper-proof ID cards with QR codes.',
       icon: CreditCard,
       color: '#6366f1',
       bgGlow: 'var(--primary-light)',
@@ -121,7 +121,7 @@ export default function ModulesView({ modulesStatus, school, user, refreshData }
             </span>
           </div>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-            All modules read from SAARTHI Core data. Individual modules can be activated or deactivated per school.
+            All modules read from EDEX Core data. Individual modules can be activated or deactivated per school.
           </p>
         </div>
 

@@ -57,6 +57,9 @@ export default function LoginModal({ onLoginSuccess, theme, toggleTheme }) {
       const res = await AuthService.login(username, password, schoolCode);
       if (res.data && res.data.data) {
         const { token, user } = res.data.data;
+        localStorage.setItem('edex_token', token);
+        localStorage.setItem('edex_user', JSON.stringify(user));
+        // Keep legacy keys synced for safety
         localStorage.setItem('saarthi_token', token);
         localStorage.setItem('saarthi_user', JSON.stringify(user));
         onLoginSuccess(user, token);
@@ -165,7 +168,7 @@ export default function LoginModal({ onLoginSuccess, theme, toggleTheme }) {
                 <Layers size={30} color="#fff" />
               </div>
               <h1 style={{ fontSize: '26px', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--text-primary)' }}>
-                SAARTHI
+                EDEX
               </h1>
               <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
                 Unified Multi-School Super App Platform
@@ -269,7 +272,7 @@ export default function LoginModal({ onLoginSuccess, theme, toggleTheme }) {
               >
                 {loading ? 'Authenticating...' : (
                   <>
-                    <span>Sign In to SAARTHI</span>
+                    <span>Sign In to EDEX</span>
                     <ArrowRight size={17} />
                   </>
                 )}

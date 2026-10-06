@@ -17,7 +17,12 @@ import {
 } from 'lucide-react';
 import { ClassService, AcademicYearService } from '../services/api';
 
-export default function ClassesView({ classes, academicYear, academicYears, refreshData }) {
+export default function ClassesView({ 
+  classes = [], 
+  academicYear = null, 
+  academicYears = [], 
+  refreshData 
+}) {
   // Modal states
   const [showAddClassModal, setShowAddClassModal] = useState(false);
   const [showAddSectionModal, setShowAddSectionModal] = useState(false);
@@ -431,7 +436,7 @@ export default function ClassesView({ classes, academicYear, academicYears, refr
               <div>
                 <h2 style={{ fontSize: '19px', fontWeight: 800 }}>Add Class Level</h2>
                 <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                  Create a new class tier in SAARTHI Core
+                  Create a new class tier in EDEX Core
                 </p>
               </div>
               <button className="btn-icon" onClick={() => setShowAddClassModal(false)} title="Close modal">

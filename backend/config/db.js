@@ -9,7 +9,7 @@ const pool = mysql.createPool({
   port              : parseInt(process.env.DB_PORT) || 3306,
   user              : process.env.DB_USER     || 'root',
   password          : process.env.DB_PASSWORD || '',
-  database          : process.env.DB_NAME     || 'saarthi_db',
+  database          : process.env.DB_NAME     || 'edex_db',
   connectionLimit   : parseInt(process.env.DB_CONNECTION_LIMIT) || 10,
   charset           : 'utf8mb4',
   timezone          : '+00:00',         // store UTC — convert at app layer

@@ -1,7 +1,7 @@
 {
-  "name": "saarthi-backend",
+  "name": "edex-backend",
   "version": "1.0.0",
-  "description": "SAARTHI Super App — Core Node.js + Express Backend",
+  "description": "EDEX Super App — Core Node.js + Express Backend",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -9,7 +9,11 @@
     "setup": "node setup_db.js",
     "test": "echo \"No tests yet\" && exit 0"
   },
-  "keywords": ["saarthi", "school", "saas"],
+  "keywords": [
+    "edex",
+    "school",
+    "saas"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -22,7 +26,8 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "mysql2": "^3.11.0",
-    "uuid": "^10.0.0"
+    "uuid": "^10.0.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "nodemon": "^3.1.4"

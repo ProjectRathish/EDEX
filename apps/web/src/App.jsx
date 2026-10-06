@@ -8,9 +8,16 @@ import ClassesView from './views/ClassesView';
 import StaffView from './views/StaffView';
 import ModulesView from './views/ModulesView';
 import RBACView from './views/RBACView';
+import IAMView from './views/IAMView';
 import ModuleWorkspaceView from './views/ModuleWorkspaceView';
 import SuperAdminView from './views/SuperAdminView';
 import SchoolProfileView from './views/SchoolProfileView';
+import BusView from './views/BusView';
+import BusManagementView from './views/BusManagementView';
+import RouteManagementView from './views/RouteManagementView';
+import StudentRosterView from './views/StudentRosterView';
+import LiveBusMapView from './views/LiveBusMapView';
+import GuardiansView from './views/GuardiansView';
 
 import {
   AuthService,
@@ -25,29 +32,71 @@ import {
 export default function App() {
   const [user, setUser] = useState(() => {
     try {
-      const u = localStorage.getItem('saarthi_user');
+      const u = localStorage.getItem('edex_user') || localStorage.getItem('saarthi_user');
       return u ? JSON.parse(u) : null;
     } catch {
       return null;
     }
   });
-  const [token, setToken] = useState(localStorage.getItem('saarthi_token') || null);
-  const [currentTab, setCurrentTab] = useState(() => {
+  const [token, setToken] = useState(localStorage.getItem('edex_token') || localStorage.getItem('saarthi_token') || null);
+  // Helper to determine initial tab from URL hash, localStorage, or user role
+  const getInitialTab = () => {
     try {
-      const u = localStorage.getItem('saarthi_user');
+      const hash = window.location.hash.replace(/^#\/?/, '').trim();
+      if (hash) return hash;
+      const savedTab = localStorage.getItem('edex_active_tab');
+      if (savedTab) return savedTab;
+      const u = localStorage.getItem('edex_user') || localStorage.getItem('saarthi_user');
       if (u) {
         const parsed = JSON.parse(u);
         return parsed?.roles?.includes('super_admin') ? 'super-admin' : 'dashboard';
       }
     } catch {}
     return 'dashboard';
-  });
+  };
+
+  const [currentTab, setCurrentTabState] = useState(getInitialTab);
+
+  // Wrapper for setCurrentTab to keep state, localStorage, and URL hash in sync
+  const setCurrentTab = (tab) => {
+    setCurrentTabState(tab);
+    if (tab) {
+      localStorage.setItem('edex_active_tab', tab);
+      if (window.location.hash !== `#${tab}`) {
+        window.history.replaceState(null, '', `#${tab}`);
+      }
+    }
+  };
+
+  // Listen for browser Back/Forward navigation (hash changes)
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace(/^#\/?/, '').trim();
+      if (hash && hash !== currentTab) {
+        setCurrentTabState(hash);
+        localStorage.setItem('edex_active_tab', hash);
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [currentTab]);
+
+  // Ensure current tab is mirrored in hash and localStorage on initial mount
+  useEffect(() => {
+    if (currentTab) {
+      localStorage.setItem('edex_active_tab', currentTab);
+      if (window.location.hash !== `#${currentTab}`) {
+        window.history.replaceState(null, '', `#${currentTab}`);
+      }
+    }
+  }, []);
+
   const [superAdminSubTab, setSuperAdminSubTab] = useState('schools');
   const [apiOnline, setApiOnline] = useState(true);
   const [loading, setLoading] = useState(false);
 
   // Theme State (Dark / Light) with LocalStorage persistence
-  const [theme, setTheme] = useState(localStorage.getItem('saarthi_theme') || 'dark');
+  const [theme, setTheme] = useState(localStorage.getItem('edex_theme') || localStorage.getItem('saarthi_theme') || 'dark');
 
   // Core Data States
   const [school, setSchool] = useState(null);
@@ -61,6 +110,7 @@ export default function App() {
   useEffect(() => {
     // Apply theme attribute to document root
     document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('edex_theme', theme);
     localStorage.setItem('saarthi_theme', theme);
   }, [theme]);
 
@@ -70,16 +120,11 @@ export default function App() {
 
   useEffect(() => {
     // Check existing login on startup
-    const savedUser = localStorage.getItem('saarthi_user');
+    const savedUser = localStorage.getItem('edex_user') || localStorage.getItem('saarthi_user');
     if (token && savedUser) {
       try {
         const parsed = JSON.parse(savedUser);
         setUser(parsed);
-        if (!parsed.roles?.includes('super_admin')) {
-          setCurrentTab('dashboard');
-        } else {
-          setCurrentTab('super-admin');
-        }
         loadAppData();
       } catch (e) {
         console.error(e);
@@ -100,6 +145,10 @@ export default function App() {
         }
       } catch (e) {
         console.warn('Auth Me error:', e);
+        if (e.response?.status === 401) {
+          handleLogout();
+          return;
+        }
       }
       setApiOnline(true);
 
@@ -129,12 +178,12 @@ export default function App() {
         const clsRes = await ClassService.list(true);
         setClasses(clsRes.data?.data || []);
 
-        // 5. Fetch Students
-        const stuRes = await StudentService.list();
+        // 5. Fetch Students (Full Roster)
+        const stuRes = await StudentService.list({ all: true });
         setStudents(stuRes.data?.data?.students || []);
 
-        // 6. Fetch Staff
-        const stfRes = await StaffService.list();
+        // 6. Fetch Staff (Full Roster)
+        const stfRes = await StaffService.list({ all: true });
         setStaff(stfRes.data?.data?.staff || []);
 
         // 7. Fetch Module activations
@@ -148,6 +197,10 @@ export default function App() {
       }
     } catch (err) {
       console.error('Error loading core data:', err);
+      if (err.response?.status === 401) {
+        handleLogout();
+        return;
+      }
       if (err.code === 'ERR_NETWORK') setApiOnline(false);
     } finally {
       setLoading(false);
@@ -166,8 +219,12 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('edex_token');
+    localStorage.removeItem('edex_user');
     localStorage.removeItem('saarthi_token');
     localStorage.removeItem('saarthi_user');
+    localStorage.removeItem('edex_active_tab');
+    window.history.replaceState(null, '', window.location.pathname);
     setUser(null);
     setToken(null);
     setSchool(null);
@@ -219,7 +276,7 @@ export default function App() {
         />
 
         {/* Dynamic Workspace Container */}
-        <main style={{ flex: 1, padding: '32px 40px', maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
+        <main style={{ flex: 1, padding: '28px 36px', width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
           {currentTab === 'super-admin' && (
             <SuperAdminView
               currentUser={user}
@@ -257,6 +314,7 @@ export default function App() {
               classes={classes}
               academicYear={academicYear}
               refreshData={loadAppData}
+              setTab={setCurrentTab}
             />
           )}
 
@@ -272,24 +330,64 @@ export default function App() {
           {currentTab === 'staff' && (
             <StaffView
               staff={staff}
+              classes={classes}
+              academicYear={academicYear}
+              academicYears={academicYears}
               refreshData={loadAppData}
             />
           )}
 
           {currentTab === 'guardians' && (
-            <StudentsView
-              students={students}
+            <GuardiansView
+              school={school}
               classes={classes}
               academicYear={academicYear}
-              refreshData={loadAppData}
+              setTab={setCurrentTab}
             />
           )}
 
-          {currentTab === 'rbac' && (
-            <RBACView />
+          {['iam', 'rbac'].includes(currentTab) && (
+            <IAMView
+              school={school}
+              staff={staff}
+            />
           )}
 
-          {['id-card', 'voting', 'bus', 'canteen'].includes(currentTab) && (
+          {['bus', 'bus-live-map'].includes(currentTab) && (
+            <LiveBusMapView
+              school={school}
+              academicYear={academicYear}
+              onNavigate={setCurrentTab}
+              theme={theme}
+            />
+          )}
+
+          {currentTab === 'bus-management' && (
+            <BusManagementView
+              staff={staff}
+              academicYear={academicYear}
+            />
+          )}
+
+          {['bus-routes', 'bus-stops', 'bus-map'].includes(currentTab) && (
+            <RouteManagementView
+              academicYear={academicYear}
+              school={school}
+              onNavigate={setCurrentTab}
+            />
+          )}
+
+          {currentTab === 'bus-passengers' && (
+            <StudentRosterView
+              students={students}
+              staff={staff}
+              classes={classes}
+              school={school}
+              academicYear={academicYear}
+            />
+          )}
+
+          {['id-card', 'voting', 'canteen'].includes(currentTab) && (
             <ModuleWorkspaceView
               moduleId={currentTab}
               students={students}

@@ -20,4 +20,11 @@ router.post('/', requirePermission('core.users.create'), ctrl.create);
 // PUT /api/v1/users/:id
 router.put('/:id', requirePermission('core.users.manage'), ctrl.update);
 
+// POST /api/v1/users/:id/reset-password
+router.post('/:id/reset-password', requirePermission('core.users.manage'), ctrl.resetPassword);
+
+// DELETE /api/v1/users/:id
+router.delete('/:id', requirePermission('core.users.manage'), ctrl.remove);
+
 module.exports = router;
+
