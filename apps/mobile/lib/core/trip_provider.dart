@@ -307,8 +307,13 @@ class TripProvider extends ChangeNotifier {
     _gpsSubscription?.cancel();
 
     _isTripActive = false;
+    _isLiveBusOnline = false;
     _currentSpeedKmh = 0.0;
     notifyListeners();
+
+    if (routeId.isNotEmpty) {
+      apiService.endTrip(routeId, token);
+    }
 
     apiService.sendGpsPing(
       token: token,
@@ -656,7 +661,7 @@ class TripProvider extends ChangeNotifier {
           final online = live['is_online'] == true;
 
           _liveTelemetry = live;
-          _isLiveBusOnline = online;
+          _isLiveBusOnline = online && isActive;
 
           // Dynamically detect server shift from driver's active trip
           String serverShift = live['shift']?.toString().toLowerCase() ?? '';
@@ -686,7 +691,7 @@ class TripProvider extends ChangeNotifier {
             _currentBusPos = LatLng(lat, lng);
             _currentHeading = heading;
             _currentSpeedKmh = speed;
-            _isTripActive = isActive || online;
+            _isTripActive = isActive && online;
 
             _updateLiveTripStatus();
             notifyListeners();

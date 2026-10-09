@@ -477,43 +477,63 @@ class _DriverTripScreenState extends State<DriverTripScreen> with TickerProvider
                     ),
                   ),
 
-                  const SizedBox(height: 8),
-
-                  // ── 3B. LIVE NEXT STOP & PASSENGERS BOARDING HUD ───────────
-                  if (trip.stops.isNotEmpty)
+                  // ── 3B. LIVE NEXT STOP HUD (Exclusively at top for driver) ──
+                  if (auth.isDriver && trip.stops.isNotEmpty) ...[
+                    const SizedBox(height: 8),
                     _buildNextStopPassengerHud(context, trip, isDark, hudBg, hudBorder, textColor, subtextColor),
+                  ],
                 ],
               ),
             ),
           ),
         ),
 
-          // ── 4. Bottom Trip Controller / Tracking Card ───────────────────
-          Positioned(
-            left: 16,
-            right: 16,
-            bottom: 24,
-            child: auth.isDriver
-                ? _buildDriverTripControls(
-                    context: context,
-                    trip: trip,
-                    auth: auth,
-                    isDark: isDark,
-                    hudBg: hudBg,
-                    hudBorder: hudBorder,
-                    textColor: textColor,
-                    subtextColor: subtextColor,
-                  )
-                : _buildPassengerTrackingPanel(
-                    context: context,
-                    trip: trip,
-                    isDark: isDark,
-                    hudBg: hudBg,
-                    hudBorder: hudBorder,
-                    textColor: textColor,
-                    subtextColor: subtextColor,
+          // ── 4. Bottom Section (Driver Controls OR Observer Next Stop HUD) ──
+          if (auth.isDriver)
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 24,
+              child: _buildDriverTripControls(
+                context: context,
+                trip: trip,
+                auth: auth,
+                isDark: isDark,
+                hudBg: hudBg,
+                hudBorder: hudBorder,
+                textColor: textColor,
+                subtextColor: subtextColor,
+              ),
+            )
+          else
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 24,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  FloatingActionButton.small(
+                    heroTag: 'recenter_bus_fab',
+                    backgroundColor: hudBg,
+                    foregroundColor: AppConstants.primaryLight,
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: hudBorder),
+                    ),
+                    onPressed: () => _mapController.move(trip.currentBusPos, 15.0),
+                    tooltip: 'Recenter on Bus',
+                    child: const Icon(Icons.my_location_rounded, size: 20),
                   ),
-          ),
+                  if (trip.stops.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    _buildNextStopPassengerHud(context, trip, isDark, hudBg, hudBorder, textColor, subtextColor),
+                  ],
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -667,176 +687,7 @@ class _DriverTripScreenState extends State<DriverTripScreen> with TickerProvider
     );
   }
 
-  // ── Passenger / Observer Live Tracking Panel (Read-Only) ──────────────────
-  Widget _buildPassengerTrackingPanel({
-    required BuildContext context,
-    required TripProvider trip,
-    required bool isDark,
-    required Color hudBg,
-    required Color hudBorder,
-    required Color textColor,
-    required Color subtextColor,
-  }) {
-    final nextStop = trip.nextStop;
-    final stopName = nextStop?['stop_name'] ?? 'Final Campus Terminus';
-    final distFormatted = trip.distToNextStopM >= 1000
-        ? '${(trip.distToNextStopM / 1000).toStringAsFixed(1)} km'
-        : '${trip.distToNextStopM.toStringAsFixed(0)} m';
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: hudBg,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: hudBorder),
-        boxShadow: [
-          BoxShadow(
-            color: isDark ? Colors.black54 : Colors.black.withValues(alpha: 0.09),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Row 1: Live Status Badge + Speed
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: trip.isTripActive
-                      ? AppConstants.accentGreen.withValues(alpha: 0.15)
-                      : Colors.grey.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: trip.isTripActive
-                        ? AppConstants.accentGreen.withValues(alpha: 0.4)
-                        : Colors.grey.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.fiber_manual_record_rounded,
-                      size: 8,
-                      color: trip.isTripActive ? AppConstants.accentGreen : Colors.grey,
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      trip.isTripActive ? 'BUS IN TRANSIT (LIVE GPS)' : 'BUS ON STANDBY',
-                      style: TextStyle(
-                        color: trip.isTripActive ? AppConstants.accentGreen : subtextColor,
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (trip.isTripActive)
-                Row(
-                  children: [
-                    const Icon(Icons.speed_rounded, size: 16, color: AppConstants.accentAmberLight),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${trip.currentSpeedKmh.toStringAsFixed(0)} km/h',
-                      style: TextStyle(color: textColor, fontWeight: FontWeight.w800, fontSize: 13),
-                    ),
-                  ],
-                ),
-            ],
-          ),
-          const SizedBox(height: 10),
-
-          // Row 2: Next Stop Details
-          Row(
-            children: [
-              const Icon(Icons.location_on_rounded, size: 18, color: AppConstants.primaryLight),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'APPROACHING STOP',
-                      style: TextStyle(color: subtextColor, fontSize: 9.5, fontWeight: FontWeight.w800),
-                    ),
-                    Text(
-                      stopName,
-                      style: TextStyle(color: textColor, fontSize: 13, fontWeight: FontWeight.bold),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              if (trip.isTripActive)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppConstants.primaryLight.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '$distFormatted • ~${trip.etaMinutes} min',
-                    style: const TextStyle(
-                      color: AppConstants.primaryLight,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Row 3: Observer Actions (Recenter & View Stops)
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: textColor,
-                    side: BorderSide(color: hudBorder),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  onPressed: () => _mapController.move(trip.currentBusPos, 15.0),
-                  icon: const Icon(Icons.my_location_rounded, size: 15),
-                  label: const Text('Recenter Bus', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: textColor,
-                    side: BorderSide(color: hudBorder),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  onPressed: () => showRouteDetailsModal(context, initialShift: trip.currentTripShift),
-                  icon: const Icon(Icons.format_list_bulleted_rounded, size: 15),
-                  label: const Text('Route Stops', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Center(
-            child: Text(
-              'Observer Mode • Trip lifecycle controlled exclusively by authorized driver',
-              style: TextStyle(color: subtextColor, fontSize: 10, fontStyle: FontStyle.italic),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   // ── End Trip Confirmation Dialog ──────────────────────────────────────────
   void _showEndTripConfirmationDialog(BuildContext context, TripProvider trip, AuthProvider auth) {

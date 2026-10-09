@@ -183,6 +183,7 @@ export const BusService = {
 
   // GPS Tracking
   recordGpsPing: (data) => api.post('/bus/tracking/ping', data),
+  endTrip: (routeId) => api.post(`/bus/tracking/${routeId}/end-trip`),
   getLivePosition: (routeId) => api.get(`/bus/tracking/${routeId}/live`),
   getFleetLivePositions: () => api.get('/bus/tracking/fleet/live'),
   getTripHistory: (routeId, tripId) => api.get(`/bus/tracking/${routeId}/trip/${tripId}`),

@@ -4,7 +4,7 @@ import {
   RefreshCw, Search, Phone, Gauge, Compass, AlertTriangle,
   CheckCircle2, ChevronRight, Eye, Layers, Maximize2, Zap,
   School, Sliders, Activity, Filter, Info, Route, ShieldAlert,
-  Lock, Check, X, ChevronDown, ChevronUp, Crosshair, ListOrdered
+  Lock, Check, X, ChevronDown, ChevronUp, Crosshair, ListOrdered, Square
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -485,6 +485,7 @@ export default function LiveBusMapView({ school, academicYear, onNavigate, theme
   const [showStops, setShowStops] = useState(true);
   const [showPolyline, setShowPolyline] = useState(true);
   const [autoRefreshInterval, setAutoRefreshInterval] = useState(4); // Balanced 4s stream sync
+  const [endingTripRouteId, setEndingTripRouteId] = useState(null);
 
   // ── Fetch Real-time Fleet Telemetry (Broadcast by Drivers) ───────────────────
   const fetchFleetData = useCallback(async (isSilent = false) => {
@@ -572,6 +573,23 @@ export default function LiveBusMapView({ school, academicYear, onNavigate, theme
   }, [selectedBus]);
 
   const isDriverTripActive = Boolean(selectedBus?.live?.is_online);
+
+  const handleForceEndTrip = async (routeId, vehicleNumber) => {
+    if (!routeId) return;
+    if (!window.confirm(`Are you sure you want to end the active trip for ${vehicleNumber || 'this bus'} and set it to Standby?`)) {
+      return;
+    }
+    setEndingTripRouteId(routeId);
+    try {
+      await BusService.endTrip(routeId);
+      await fetchFleetData(true);
+    } catch (err) {
+      console.error('Failed to end trip:', err);
+      alert('Could not end trip. Please try again.');
+    } finally {
+      setEndingTripRouteId(null);
+    }
+  };
 
   // ── Fetch Stops for Route Cache ─────────────────────────────────────────────
   const fetchRouteStops = useCallback(async (routeId) => {
@@ -1466,6 +1484,32 @@ export default function LiveBusMapView({ school, academicYear, onNavigate, theme
                         ? (activeDriverShift === 'evening' ? '🌇 Evening Trip Active' : '🌅 Morning Trip Active')
                         : '⏸️ Trip Standby'}
                     </span>
+                    {isDriverTripActive && selectedBus?.route_id && (
+                      <button
+                        onClick={() => handleForceEndTrip(selectedBus.route_id, selectedBus.vehicle_number)}
+                        disabled={endingTripRouteId === selectedBus.route_id}
+                        title="End this trip and reset vehicle to Standby"
+                        style={{
+                          marginLeft: 6,
+                          padding: '3px 10px',
+                          borderRadius: 8,
+                          background: '#ef4444',
+                          color: '#ffffff',
+                          border: 'none',
+                          fontSize: 10.5,
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          boxShadow: '0 2px 8px rgba(239, 68, 68, 0.35)',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <Square size={10} fill="#ffffff" />
+                        <span>{endingTripRouteId === selectedBus.route_id ? 'Ending...' : 'End Trip'}</span>
+                      </button>
+                    )}
                   </div>
                   <div style={{ fontSize: 12, color: textSecondary, marginTop: 3 }}>
                     Driver: <span style={{ color: textPrimary, fontWeight: 800 }}>{selectedBus.driver_name || 'No driver assigned'}</span>

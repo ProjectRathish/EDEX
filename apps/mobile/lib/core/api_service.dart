@@ -248,4 +248,17 @@ class ApiService {
     } catch (_) {}
     return null;
   }
+
+  /// Forcefully ends an active trip for a route
+  Future<bool> endTrip(String routeId, String token) async {
+    try {
+      final url = Uri.parse('$_baseUrl/bus/tracking/$routeId/end-trip');
+      final response = await http
+          .post(url, headers: _headers(token))
+          .timeout(const Duration(seconds: 4));
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch (_) {
+      return false;
+    }
+  }
 }

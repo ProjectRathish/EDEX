@@ -59,6 +59,7 @@ router.delete('/routes/:id/path',          bus.deleteRoutePath);
 // GET  /bus/tracking/:routeId/live                → parent app gets latest position
 // GET  /bus/tracking/:routeId/trip/:tripId        → trip history / replay
 router.post('/tracking/ping',                        bus.recordGpsPing);
+router.post('/tracking/:routeId/end-trip',           bus.endTripByRoute);
 router.get ('/tracking/fleet/live',                  bus.getFleetLivePositions);
 router.get ('/tracking/:routeId/live',               bus.getLivePosition);
 router.get ('/tracking/:routeId/trip/:tripId',       bus.getTripHistory);

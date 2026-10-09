@@ -1509,7 +1509,7 @@ const getLivePosition = async (req, res, next) => {
       const pingTime = new Date(latestPing.received_at || latestPing.recorded_at).getTime();
       const rawAge = Math.round(Math.abs(Date.now() - pingTime) / 1000);
       ageSeconds = isNaN(rawAge) ? 0 : rawAge;
-      isOnline = ageSeconds < 300 || latestPing.is_trip_active == 1;
+      isOnline = (latestPing.is_trip_active == 1 || latestPing.is_trip_active === true) && ageSeconds < 300;
 
       if (latestPing.trip_id) {
         const tid = String(latestPing.trip_id).toLowerCase();
@@ -1538,6 +1538,66 @@ const getLivePosition = async (req, res, next) => {
         age_seconds: ageSeconds,
       } : null,
     }, 'Live position fetched');
+  } catch (err) { next(err); }
+};
+
+/**
+ * POST /bus/tracking/:routeId/end-trip
+ * Forcefully terminates an active trip for a route.
+ * Updates both the in-memory telemetry cache and persists a terminal standby ping in MySQL.
+ */
+const endTripByRoute = async (req, res, next) => {
+  try {
+    const schoolId  = req.user.school_id;
+    const { routeId } = req.params;
+
+    const [[route]] = await pool.execute(
+      'SELECT route_id, assigned_bus_id FROM bus_routes WHERE route_id = ? AND school_id = ? AND deleted_at IS NULL',
+      [routeId, schoolId],
+    );
+    if (!route) return sendNotFound(res, 'Route not found');
+
+    const busId = route.assigned_bus_id;
+    if (busId) {
+      let latest = liveBusTelemetryCache.get(busId);
+      if (!latest) {
+        const [[dbPing]] = await pool.execute(
+          'SELECT latitude, longitude, heading_degrees FROM bus_gps_pings WHERE bus_id = ? ORDER BY received_at DESC LIMIT 1',
+          [busId],
+        );
+        latest = dbPing;
+      }
+
+      const id = generateUUID();
+      const now = new Date();
+      const lat = latest?.latitude || 10.938195;
+      const lng = latest?.longitude || 76.163010;
+      const heading = latest?.heading_degrees || 0;
+
+      await pool.execute(
+        `INSERT INTO bus_gps_pings
+           (ping_id, bus_id, route_id, trip_id, latitude, longitude,
+            speed_kmh, heading_degrees, is_trip_active, recorded_at, received_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+        [id, busId, routeId, null, lat, lng, 0.0, heading, 0, now, now],
+      );
+
+      liveBusTelemetryCache.set(busId, {
+        ping_id: id,
+        bus_id: busId,
+        route_id: routeId,
+        trip_id: null,
+        latitude: lat,
+        longitude: lng,
+        speed_kmh: 0.0,
+        heading_degrees: heading,
+        is_trip_active: 0,
+        recorded_at: now,
+        received_at: now,
+      });
+    }
+
+    return sendSuccess(res, { route_id: routeId, bus_id: busId, is_trip_active: 0 }, 'Trip ended successfully');
   } catch (err) { next(err); }
 };
 
@@ -1700,5 +1760,5 @@ module.exports = {
   // Route path (OSRM)
   getRoutePath, generateRoutePath, deleteRoutePath,
   // GPS Tracking
-  recordGpsPing, getLivePosition, getTripHistory, getFleetLivePositions,
+  recordGpsPing, getLivePosition, getTripHistory, getFleetLivePositions, endTripByRoute,
 };
